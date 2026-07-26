@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.Adjust
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.CardMembership
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Search
@@ -52,6 +54,8 @@ val DarkBg = Color(0xFF040A18)
 val DarkCard = Color(0xFF0B132B)
 val DarkInputBg = Color(0xFF131D30)
 val CoralRed = Color(0xFFDC2626)
+val EmeraldGreen = Color(0xFF059669)
+val RoyalBlue = Color(0xFF2563EB)
 val GoldYellow = Color(0xFFFFCC00)
 val TextMuted = Color(0xFF94A3B8)
 val LogoDarkBlue = Color(0xFF0F1E3D)
@@ -98,6 +102,8 @@ data class AppStrings(
     val visitJournalWebsite: String,
     val accessH5Index: String,
     val contactUs: String,
+    val donation: String,
+    val subscribe: String,
     val broadAreas: List<String>
 )
 
@@ -137,6 +143,8 @@ val stringsEN = AppStrings(
     visitJournalWebsite = "🌐 Official Journal Website",
     accessH5Index = "Access H5-Index",
     contactUs = "Contact Us",
+    donation = "Donate",
+    subscribe = "Subscribe",
     broadAreas = broadAreasEN
 )
 
@@ -176,6 +184,8 @@ val stringsES = AppStrings(
     visitJournalWebsite = "🌐 Sitio Oficial de la Revista",
     accessH5Index = "Acceda al Índice H5",
     contactUs = "Contáctenos",
+    donation = "Donación",
+    subscribe = "Suscribirse",
     broadAreas = broadAreasES
 )
 
@@ -215,6 +225,8 @@ val stringsPT = AppStrings(
     visitJournalWebsite = "🌐 Site Oficial do Periódico",
     accessH5Index = "Acesse o Índice H5",
     contactUs = "Fale Conosco",
+    donation = "Doação",
+    subscribe = "Inscrever-se",
     broadAreas = broadAreasPT
 )
 
@@ -338,7 +350,65 @@ fun SciPubsApp(viewModel: MainViewModel) {
                         }
                     }
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        // Botão Doação (TopBar)
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = EmeraldGreen,
+                            modifier = Modifier.clickable {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/donate"))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                        data = Uri.parse("mailto:support@scipubs.com")
+                                        putExtra(Intent.EXTRA_SUBJECT, "Doação SciPubs")
+                                    }
+                                    context.startActivity(mailIntent)
+                                }
+                            }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Favorite, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(strings.donation, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+
+                        // Botão Inscrever-se (TopBar)
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = RoyalBlue,
+                            modifier = Modifier.clickable {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/subscribe"))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                        data = Uri.parse("mailto:support@scipubs.com")
+                                        putExtra(Intent.EXTRA_SUBJECT, "Inscrição SciPubs")
+                                    }
+                                    context.startActivity(mailIntent)
+                                }
+                            }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.CardMembership, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(strings.subscribe, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            }
+                        }
+
+                        // Seletor de Idiomas (EN, ES, PT)
                         listOf(AppLanguage.EN to "EN", AppLanguage.ES to "ES", AppLanguage.PT to "PT").forEach { (lang, code) ->
                             val isSelected = currentLanguage == lang
                             Surface(
@@ -351,7 +421,7 @@ fun SciPubsApp(viewModel: MainViewModel) {
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
                                 )
                             }
                         }
@@ -900,43 +970,128 @@ fun SidebarContent(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 🟢 BOTÃO VERMELHO "FALE CONOSCO" NO TOPO DO MENU LATERAL (ACIMA DE BASES DE DADOS)
-            Surface(
-                color = CoralRed,
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        try {
-                            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = Uri.parse("mailto:support@scipubs.com")
-                                putExtra(Intent.EXTRA_SUBJECT, "SciPubs Journal Finder Support")
+            // BOTÕES DE AÇÃO DESTACADOS: FALE CONOSCO, DOAÇÃO E INSCREVER-SE
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // 1. Fale Conosco
+                Surface(
+                    color = CoralRed,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            try {
+                                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = Uri.parse("mailto:support@scipubs.com")
+                                    putExtra(Intent.EXTRA_SUBJECT, "SciPubs Journal Finder Support")
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                             }
-                            context.startActivity(intent)
-                        } catch (e: Exception) {
-                            e.printStackTrace()
+                            onClose()
                         }
-                        onClose()
-                    }
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
                 ) {
-                    Icon(
-                        Icons.Default.Email,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = strings.contactUs,
-                        color = Color.White,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Email,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.contactUs,
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // 2. Doação
+                Surface(
+                    color = EmeraldGreen,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/donate"))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = Uri.parse("mailto:support@scipubs.com")
+                                    putExtra(Intent.EXTRA_SUBJECT, "Doação SciPubs")
+                                }
+                                context.startActivity(mailIntent)
+                            }
+                            onClose()
+                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Favorite,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.donation,
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // 3. Inscrever-se
+                Surface(
+                    color = RoyalBlue,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/subscribe"))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = Uri.parse("mailto:support@scipubs.com")
+                                    putExtra(Intent.EXTRA_SUBJECT, "Inscrição SciPubs")
+                                }
+                                context.startActivity(mailIntent)
+                            }
+                            onClose()
+                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            Icons.Default.CardMembership,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = strings.subscribe,
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
