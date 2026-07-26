@@ -350,65 +350,7 @@ fun SciPubsApp(viewModel: MainViewModel) {
                         }
                     }
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        // Botão Doação (TopBar)
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = EmeraldGreen,
-                            modifier = Modifier.clickable {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/donate"))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                                        data = Uri.parse("mailto:support@scipubs.com")
-                                        putExtra(Intent.EXTRA_SUBJECT, "Doação SciPubs")
-                                    }
-                                    context.startActivity(mailIntent)
-                                }
-                            }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.Favorite, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(strings.donation, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            }
-                        }
-
-                        // Botão Inscrever-se (TopBar)
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = RoyalBlue,
-                            modifier = Modifier.clickable {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/subscribe"))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                                        data = Uri.parse("mailto:support@scipubs.com")
-                                        putExtra(Intent.EXTRA_SUBJECT, "Inscrição SciPubs")
-                                    }
-                                    context.startActivity(mailIntent)
-                                }
-                            }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(Icons.Default.CardMembership, contentDescription = null, tint = Color.White, modifier = Modifier.size(11.dp))
-                                Spacer(modifier = Modifier.width(3.dp))
-                                Text(strings.subscribe, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            }
-                        }
-
-                        // Seletor de Idiomas (EN, ES, PT)
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         listOf(AppLanguage.EN to "EN", AppLanguage.ES to "ES", AppLanguage.PT to "PT").forEach { (lang, code) ->
                             val isSelected = currentLanguage == lang
                             Surface(
@@ -421,7 +363,7 @@ fun SciPubsApp(viewModel: MainViewModel) {
                                     fontSize = 10.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
                             }
                         }
