@@ -445,6 +445,74 @@ fun SciPubsApp(viewModel: MainViewModel) {
                     )
                 }
 
+                // LINHA DE BOTÕES DESTACADOS NA TELA PRINCIPAL (DOAÇÃO E INSCREVER-SE)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    // 1. Doação
+                    Surface(
+                        color = EmeraldGreen,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/donate"))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                        data = Uri.parse("mailto:support@scipubs.com")
+                                        putExtra(Intent.EXTRA_SUBJECT, "Doação SciPubs")
+                                    }
+                                    context.startActivity(mailIntent)
+                                }
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(Icons.Default.Favorite, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(strings.donation, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    // 2. Inscrever-se
+                    Surface(
+                        color = RoyalBlue,
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/subscribe"))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                        data = Uri.parse("mailto:support@scipubs.com")
+                                        putExtra(Intent.EXTRA_SUBJECT, "Inscrição SciPubs")
+                                    }
+                                    context.startActivity(mailIntent)
+                                }
+                            }
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(Icons.Default.CardMembership, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(strings.subscribe, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
                 Spacer(modifier = Modifier.height(4.dp))
 
                 // ABAS PRINCIPAIS MULTILÍNGUES
