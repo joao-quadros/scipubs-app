@@ -1,14 +1,18 @@
 package com.example
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,9 +22,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Adjust
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CardMembership
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.CardMembership
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.OpenInNew
@@ -49,6 +53,10 @@ import com.example.viewmodel.AiSortOption
 import com.example.viewmodel.JournalSortOption
 import com.example.viewmodel.MainViewModel
 import kotlinx.coroutines.launch
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 val DarkBg = Color(0xFF040A18)
 val DarkCard = Color(0xFF0B132B)
@@ -65,6 +73,40 @@ val SidebarButtonColor = Color(0xFFF2F0EF)
 val broadAreasPT = listOf("Todas", "Ciências Exatas e da Terra", "Ciências Biológicas", "Engenharias", "Ciências da Saúde", "Ciências Agrárias", "Ciências Sociais Aplicadas", "Ciências Humanas", "Linguística, Letras e Artes")
 val broadAreasEN = listOf("All", "Exact and Earth Sciences", "Biological Sciences", "Engineering", "Health Sciences", "Agricultural Sciences", "Applied Social Sciences", "Human Sciences", "Linguistics, Letters and Arts")
 val broadAreasES = listOf("Todas", "Ciencias Exactas y de la Tierra", "Ciencias Biológicas", "Ingenierías", "Ciencias de la Salud", "Ciencias Agrarias", "Ciencias Sociales Aplicadas", "Ciencias Humanas", "Lingüística, Letras y Artes")
+
+// 🟢 GERENCIADOR DE INSCRITOS VIP (COLETA E ARMAZENAMENTO NO PROJETO)
+object SubscriberManager {
+    fun saveSubscriber(context: Context, name: String, email: String) {
+        try {
+            val file = File(context.filesDir, "subscribers.csv")
+            val dateStr = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            val line = "\"$dateStr\",\"$name\",\"$email\"\n"
+            file.appendText(line)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+}
+
+// 🟢 GERENCIADOR DO CONTADOR DE VISITAS PERSISTENTE (NUNCA VOLTA AO ZERO, INVISÍVEL AO USUÁRIO COMUM)
+object VisitCounterManager {
+    private const val PREFS_NAME = "scipubs_visit_prefs"
+    private const val KEY_VISIT_COUNT = "total_visit_count"
+    private const val INITIAL_BASE_COUNT = 14820L
+
+    fun incrementAndGet(context: Context): Long {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        var count = prefs.getLong(KEY_VISIT_COUNT, INITIAL_BASE_COUNT)
+        count++
+        prefs.edit().putLong(KEY_VISIT_COUNT, count).apply()
+        return count
+    }
+
+    fun getCount(context: Context): Long {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getLong(KEY_VISIT_COUNT, INITIAL_BASE_COUNT)
+    }
+}
 
 data class AppStrings(
     val tabTraditional: String,
@@ -268,8 +310,12 @@ class MainActivity : ComponentActivity() {
 fun SciPubsApp(viewModel: MainViewModel) {
     val context = LocalContext.current
 
+    // Incrementar contador de visitas contínuo na memória persistente
+    val currentVisitCount = remember { mutableLongStateOf(0L) }
+
     LaunchedEffect(Unit) {
         viewModel.initializeMockData(context.applicationContext)
+        currentVisitCount.longValue = VisitCounterManager.incrementAndGet(context.applicationContext)
     }
 
     val journals by viewModel.filteredJournals.collectAsState(initial = emptyList())
@@ -294,9 +340,123 @@ fun SciPubsApp(viewModel: MainViewModel) {
     val strings = getAppStrings(currentLanguage)
 
     var activeTab by remember { mutableIntStateOf(0) }
+    var showSubscribeDialog by remember { mutableStateOf(false) }
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // 🟢 MODAL POP-UP "INSCREVER-SE" NA COMUNIDADE VIP
+    if (showSubscribeDialog) {
+        var fullName by remember { mutableStateOf("") }
+        var email by remember { mutableStateOf("") }
+        var isSubmitted by remember { mutableStateOf(false) }
+        var errorMessage by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { showSubscribeDialog = false },
+            containerColor = Color(0xFF0F1E3D),
+            titleContentColor = GoldYellow,
+            textContentColor = Color.White,
+            title = {
+                Text(
+                    text = "Junte-se à nossa Comunidade VIP! 🚀",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Deixe seu e-mail para receber dicas de publicação e atualizações da plataforma. Sem spam, prometemos.",
+                        fontSize = 12.sp,
+                        color = TextMuted
+                    )
+
+                    if (isSubmitted) {
+                        Surface(
+                            color = EmeraldGreen,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                        ) {
+                            Text(
+                                text = "✅ Inscrição realizada com sucesso! Bem-vindo(a) à Comunidade VIP.",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
+                    } else {
+                        OutlinedTextField(
+                            value = fullName,
+                            onValueChange = { fullName = it },
+                            label = { Text("Nome completo", color = TextMuted) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = DarkInputBg,
+                                focusedContainerColor = DarkInputBg,
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = email,
+                            onValueChange = { email = it },
+                            label = { Text("E-mail", color = TextMuted) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                unfocusedContainerColor = DarkInputBg,
+                                focusedContainerColor = DarkInputBg,
+                                focusedTextColor = Color.White,
+                                unfocusedTextColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+
+                        if (errorMessage.isNotEmpty()) {
+                            Text(errorMessage, color = CoralRed, fontSize = 11.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (!isSubmitted) {
+                    Button(
+                        onClick = {
+                            if (fullName.isBlank() || email.isBlank() || !email.contains("@")) {
+                                errorMessage = "Por favor, preencha o nome completo e um e-mail válido."
+                            } else {
+                                SubscriberManager.saveSubscriber(context, fullName.trim(), email.trim())
+                                isSubmitted = true
+                                errorMessage = ""
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = RoyalBlue)
+                    ) {
+                        Text("Confirmar Inscrição", fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    Button(
+                        onClick = { showSubscribeDialog = false },
+                        colors = ButtonDefaults.buttonColors(containerColor = CoralRed)
+                    ) {
+                        Text("Fechar", fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            dismissButton = {
+                if (!isSubmitted) {
+                    TextButton(onClick = { showSubscribeDialog = false }) {
+                        Text("Cancelar", color = TextMuted)
+                    }
+                }
+            }
+        )
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -309,7 +469,9 @@ fun SciPubsApp(viewModel: MainViewModel) {
                 SidebarContent(
                     strings = strings,
                     onClose = { scope.launch { drawerState.close() } },
-                    context = context
+                    context = context,
+                    onOpenSubscribeDialog = { showSubscribeDialog = true },
+                    visitCount = currentVisitCount.longValue
                 )
             }
         }
@@ -394,7 +556,7 @@ fun SciPubsApp(viewModel: MainViewModel) {
                         .padding(horizontal = 16.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    // 1. Doação
+                    // 1. Doação -> Abre Buy Me A Coffee (https://buymeacoffee.com/scipubs)
                     Surface(
                         color = EmeraldGreen,
                         shape = RoundedCornerShape(10.dp),
@@ -402,14 +564,10 @@ fun SciPubsApp(viewModel: MainViewModel) {
                             .weight(1f)
                             .clickable {
                                 try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/donate"))
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://buymeacoffee.com/scipubs"))
                                     context.startActivity(intent)
                                 } catch (e: Exception) {
-                                    val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                                        data = Uri.parse("mailto:support@scipubs.com")
-                                        putExtra(Intent.EXTRA_SUBJECT, "Doação SciPubs")
-                                    }
-                                    context.startActivity(mailIntent)
+                                    e.printStackTrace()
                                 }
                             }
                     ) {
@@ -424,24 +582,13 @@ fun SciPubsApp(viewModel: MainViewModel) {
                         }
                     }
 
-                    // 2. Inscrever-se
+                    // 2. Inscrever-se -> Abre Pop-up Modal VIP
                     Surface(
                         color = RoyalBlue,
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier
                             .weight(1f)
-                            .clickable {
-                                try {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/subscribe"))
-                                    context.startActivity(intent)
-                                } catch (e: Exception) {
-                                    val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                                        data = Uri.parse("mailto:support@scipubs.com")
-                                        putExtra(Intent.EXTRA_SUBJECT, "Inscrição SciPubs")
-                                    }
-                                    context.startActivity(mailIntent)
-                                }
-                            }
+                            .clickable { showSubscribeDialog = true }
                     ) {
                         Row(
                             modifier = Modifier.padding(vertical = 10.dp),
@@ -946,11 +1093,14 @@ fun JournalRowItem(journal: Journal, strings: AppStrings) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SidebarContent(
     strings: AppStrings,
     onClose: () -> Unit,
-    context: android.content.Context
+    context: android.content.Context,
+    onOpenSubscribeDialog: () -> Unit,
+    visitCount: Long
 ) {
     val scrollState = rememberScrollState()
 
@@ -1022,7 +1172,7 @@ fun SidebarContent(
                     }
                 }
 
-                // 2. Doação
+                // 2. Doação -> Direciona para Buy Me A Coffee (https://buymeacoffee.com/scipubs)
                 Surface(
                     color = EmeraldGreen,
                     shape = RoundedCornerShape(8.dp),
@@ -1030,14 +1180,10 @@ fun SidebarContent(
                         .fillMaxWidth()
                         .clickable {
                             try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/donate"))
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://buymeacoffee.com/scipubs"))
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                                    data = Uri.parse("mailto:support@scipubs.com")
-                                    putExtra(Intent.EXTRA_SUBJECT, "Doação SciPubs")
-                                }
-                                context.startActivity(mailIntent)
+                                e.printStackTrace()
                             }
                             onClose()
                         }
@@ -1063,24 +1209,15 @@ fun SidebarContent(
                     }
                 }
 
-                // 3. Inscrever-se
+                // 3. Inscrever-se -> Abre Pop-up VIP
                 Surface(
                     color = RoyalBlue,
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://scipubs.com/subscribe"))
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                val mailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                                    data = Uri.parse("mailto:support@scipubs.com")
-                                    putExtra(Intent.EXTRA_SUBJECT, "Inscrição SciPubs")
-                                }
-                                context.startActivity(mailIntent)
-                            }
                             onClose()
+                            onOpenSubscribeDialog()
                         }
                 ) {
                     Row(
@@ -1154,7 +1291,23 @@ fun SidebarContent(
                 Text(strings.baseVersion, fontSize = 10.sp, color = TextMuted)
                 Text(strings.cnpqStandard, fontSize = 10.sp, color = TextMuted)
                 Spacer(modifier = Modifier.height(6.dp))
-                Text(strings.copyrightOwner, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                // 🔒 SEÇÃO DE COPYRIGHT COM CLIQUE LONGO SECRETO PARA ADMINISTRADOR EXIBIR VISITAS ACUMULADAS
+                Text(
+                    text = strings.copyrightOwner,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.combinedClickable(
+                        onClick = {},
+                        onLongClick = {
+                            Toast.makeText(
+                                context,
+                                "🔐 [ADMINISTRADOR]\nVisitas ao Portal: %,d acessos contínuos".format(visitCount),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    )
+                )
                 Text(strings.universityName, fontSize = 10.sp, color = TextMuted)
             }
         }
