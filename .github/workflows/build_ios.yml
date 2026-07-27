@@ -36,12 +36,12 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
 
       - name: Build Shared KMP Framework for iOS
-        run: ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+        run: ./gradlew :shared:linkReleaseFrameworkIosArm64 :shared:linkDebugFrameworkIosArm64
 
       - name: Package Valid iOS IPA Bundle for Diawi & Sideloadly
         run: |
           mkdir -p Payload/SciPubs.app
-          cp -r shared/build/bin/iosArm64/debugFramework/* Payload/SciPubs.app/ 2>/dev/null || cp -r shared/build/bin/iosArm64/releaseFramework/* Payload/SciPubs.app/ 2>/dev/null || true
+          cp -r shared/build/bin/iosArm64/releaseFramework/* Payload/SciPubs.app/ 2>/dev/null || cp -r shared/build/bin/iosArm64/debugFramework/* Payload/SciPubs.app/ 2>/dev/null || true
           mkdir -p ipa_export
           zip -r ipa_export/SciPubs-iOS-App.ipa Payload/
 
