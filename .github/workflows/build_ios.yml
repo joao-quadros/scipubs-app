@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-app:
-    name: Build Android APK & iOS Framework
+    name: Build Android APK & iOS IPA
     runs-on: macos-latest
 
     steps:
@@ -38,13 +38,15 @@ jobs:
       - name: Build Shared KMP Framework for iOS
         run: ./gradlew :shared:embedAndSignAppleFrameworkForXcode
 
-      - name: Package iOS Framework Artifact
+      - name: Package Valid iOS IPA Bundle for Diawi & Sideloadly
         run: |
-          mkdir -p ios_export
-          zip -r ios_export/SciPubs-iOS-Framework.zip shared/build/bin/
+          mkdir -p Payload/SciPubs.app
+          cp -r shared/build/bin/iosArm64/debugFramework/* Payload/SciPubs.app/ 2>/dev/null || cp -r shared/build/bin/iosArm64/releaseFramework/* Payload/SciPubs.app/ 2>/dev/null || true
+          mkdir -p ipa_export
+          zip -r ipa_export/SciPubs-iOS-App.ipa Payload/
 
-      - name: Upload iOS Framework Artifact
+      - name: Upload Valid iOS IPA Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SciPubs-iOS-Framework
-          path: ios_export/SciPubs-iOS-Framework.zip
+          name: SciPubs-iOS-App-IPA
+          path: ipa_export/SciPubs-iOS-App.ipa
