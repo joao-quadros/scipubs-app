@@ -43,6 +43,8 @@ jobs:
           mkdir -p Payload/SciPubs.app
           cp -r shared/build/bin/iosArm64/releaseFramework/SciPubsShared.framework/* Payload/SciPubs.app/ 2>/dev/null || cp -r shared/build/bin/iosArm64/debugFramework/SciPubsShared.framework/* Payload/SciPubs.app/ 2>/dev/null || true
           cp shared/Info.plist Payload/SciPubs.app/Info.plist
+          echo -n "APPL????" > Payload/SciPubs.app/PkgInfo
+          chmod +x Payload/SciPubs.app/SciPubsShared 2>/dev/null || true
           mkdir -p ipa_export
           zip -r ipa_export/SciPubs-iOS-App.ipa Payload/
 
