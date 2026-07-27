@@ -25,3 +25,4 @@ dependencyResolutionManagement {
 rootProject.name = "SciPubs Journal Finder"
 
 include(":app")
+include(":shared")

@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-app:
-    name: Build Android APK & iOS Assets
+    name: Build Android APK & iOS Framework
     runs-on: macos-latest
 
     steps:
@@ -29,22 +29,22 @@ jobs:
       - name: Build Android Debug APK
         run: ./gradlew assembleDebug
 
-      - name: Build Android Release APK
-        run: ./gradlew assembleRelease --continue || true
-
       - name: Upload Android APK Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: SciPubs-Android-APK
-          path: app/build/outputs/apk/**/*.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Package Source & iOS Assets
+      - name: Build Shared KMP Framework for iOS
+        run: ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+
+      - name: Package iOS Framework Artifact
         run: |
           mkdir -p ios_export
-          zip -r ios_export/SciPubs-iOS-Source.zip app/src/main/java/ assets/ README.md build.gradle.kts settings.gradle.kts
+          zip -r ios_export/SciPubs-iOS-Framework.zip shared/build/bin/
 
-      - name: Upload iOS Assets & Code Artifact
+      - name: Upload iOS Framework Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SciPubs-iOS-Bundle
-          path: ios_export/SciPubs-iOS-Source.zip
+          name: SciPubs-iOS-Framework
+          path: ios_export/SciPubs-iOS-Framework.zip
